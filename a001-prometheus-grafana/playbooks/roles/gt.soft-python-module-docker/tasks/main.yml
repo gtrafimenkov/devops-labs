@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+---
+
+- name: Install python3 pip
+  apt:
+    name:
+      - python3-pip
+    update_cache: true
+    cache_valid_time: 3600
+  become: yes
+
+- name: Install docker-py pip module
+  pip: name=docker
+  become: yes

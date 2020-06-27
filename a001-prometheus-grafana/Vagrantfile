@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+#
+# -*- mode: ruby -*-
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  {
+    "app01"    => { private_ip: "10.116.101.11" },
+    "mon01"    => { private_ip: "10.116.101.12" },
+  }.each do |short_name, params|
+    config.vm.define short_name do |instance|
+      instance.vm.box      = params[:image] || "ubuntu/focal64"
+      instance.vm.hostname = short_name
+
+      if params[:private_ip]
+        instance.vm.network "private_network", ip: params[:private_ip]
+      end
+
+      instance.vm.synced_folder ".", "/vagrant", disabled: true
+
+      instance.vm.provider :virtualbox do |vb|
+        vb.gui    = params[:gui]  || false
+        vb.memory = params[:ram]  || 768
+        vb.cpus   = params[:cpus] || 1
+      end
+    end
+  end
+
+  config.vm.box_check_update = false
+
+  # don't replace insecure ssh key inside the VM, so
+  # we can use ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key in the inventory file
+  config.ssh.insert_key = false
+end

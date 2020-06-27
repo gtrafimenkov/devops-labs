@@ -1,0 +1,125 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+---
+- hosts:
+    - mon01
+
+  roles:
+    - gt.soft-docker-ce
+    - gt.soft-python-module-docker  # needed to manage docker containers with Ansible
+
+  tasks:
+    # Setting up a separate docker network, so Grafana container can reach Prometheus
+    - name: Create a network
+      docker_network:
+        name: prometheus
+      become: yes
+
+    # Setting up prometheus
+    - block:
+        - name: Create folder for Prometheus config and data
+          file:
+            path: /opt/prometheus
+            state: directory
+
+        - name: Create folder for Prometheus data
+          file:
+            path: /opt/prometheus/data
+            state: directory
+            owner: 65534  # prometheus inside the container runs under this user
+            group: 65534
+
+        - name: Copy prometheus config
+          template:
+            src: prometheus/prometheus.yml
+            dest: /opt/prometheus/prometheus.yml
+          register: prom_config
+
+        - debug: msg="{{ prom_config }}"
+
+        - name: Create and run prometheus container
+          docker_container:
+            name: prometheus
+            image: prom/prometheus:v2.19.2
+            command: --storage.tsdb.path=/data --config.file=/etc/prometheus/prometheus.yml
+            restart_policy: unless-stopped
+            state: started
+            restart: "{{ prom_config.changed }}"
+            ports:
+              - "127.0.0.1:9090:9090/tcp"
+            volumes:
+             - /opt/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+             - /opt/prometheus/data:/data
+            networks:
+              - name: prometheus
+      become: yes
+      tags:
+        - prometheus
+
+    # Grafana
+    - block:
+      - name: Create folder for Grafana config and data
+        file:
+          path: /opt/grafana
+          state: directory
+
+      - name: Create folder for Grafana data
+        file:
+          path: "{{ item }}"
+          state: directory
+          owner: 472  # that's user id used by Grafana
+          group: 472
+        with_items:
+          - /opt/grafana/data
+          - /opt/grafana/data/dashboards
+          - /opt/grafana/provisioning
+          - /opt/grafana/provisioning/dashboards
+          - /opt/grafana/provisioning/datasources
+          - /opt/grafana/provisioning/notifiers
+
+      - name: Copy Grafana config
+        template:
+          src: grafana/grafana.ini
+          dest: /opt/grafana/grafana.ini
+          owner: 472  # that's user id used by Grafana
+          group: 472
+        register: grafana_config_main
+
+      - name: Copy provisioning configs
+        template:
+          src: grafana/provisioning/{{ item }}
+          dest: /opt/grafana/provisioning/{{ item }}
+          owner: 472
+          group: 472
+        with_items:
+          - datasources/prometheus-datasource.yml
+          - dashboards/dashboards.yml
+        register: grafana_config_provisioning
+
+      - name: Copy dashboards
+        copy:
+          src: grafana/dashboards/{{ item }}
+          dest: /opt/grafana/data/dashboards/{{ item }}
+          owner: 472
+          group: 472
+        with_items:
+          - node-exporter-full.json
+
+      - name: Create and run Grafana
+        docker_container:
+          name: grafana
+          image: grafana/grafana:7.0.4
+          restart_policy: unless-stopped
+          state: started
+          restart: "{{ grafana_config_main.changed or grafana_config_provisioning.changed }}"
+          ports:
+            - "3000:3000/tcp"
+          volumes:
+            - /opt/grafana/grafana.ini:/etc/grafana/grafana.ini
+            - /opt/grafana/provisioning:/etc/grafana/provisioning
+            - /opt/grafana/data:/var/lib/grafana
+          networks:
+            - name: prometheus
+      become: yes
+      tags:
+        - grafana

@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+#
+# {{ ansible_managed }}
+
+apiVersion: 1
+
+providers:
+  - name: Default
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

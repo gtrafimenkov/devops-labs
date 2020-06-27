@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+
+[vagrant_vms]
+app01                   ansible_ssh_host=10.116.101.11
+mon01                   ansible_ssh_host=10.116.101.12
+
+[vagrant_vms:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o IdentitiesOnly=yes -o CheckHostIP=no'
+ansible_ssh_user=vagrant
+ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+ansible_python_interpreter=/usr/bin/python3
