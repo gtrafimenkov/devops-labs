@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+---
+
+- name: Install docker-py pip module
+  pip:
+    name: docker
+  become: yes

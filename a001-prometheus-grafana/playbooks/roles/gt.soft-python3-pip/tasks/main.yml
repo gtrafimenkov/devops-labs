@@ -9,7 +9,3 @@
     update_cache: true
     cache_valid_time: 3600
   become: yes
-
-- name: Install docker-py pip module
-  pip: name=docker
-  become: yes

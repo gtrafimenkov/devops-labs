@@ -6,7 +6,10 @@
 
   roles:
     - gt.soft-docker-ce
-    - gt.soft-python-module-docker  # needed to manage docker containers with Ansible
+
+    # needed to manage docker containers with Ansible
+    - gt.soft-python3-pip
+    - gt.soft-pip-module-docker
 
   tasks:
     # Setting up a separate docker network, so Grafana container can reach Prometheus
