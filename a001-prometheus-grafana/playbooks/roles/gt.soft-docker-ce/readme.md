@@ -1,5 +1,5 @@
-Installation of Docker CE
+# Install Docker CE
 
-# Configuration options
+## Configuration options
 
 - `docker_iptables` - Allow docker to manage iptables rules.  True by default.
