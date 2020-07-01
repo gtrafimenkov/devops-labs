@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+---
+- name: Add the user
+  user:
+    name: deployer
+    uid: "{{ deployer_uid }}"
+    shell: "{{ deployer_shell }}"
+  become: yes
+
+- name: Set authorized keys
+  authorized_key:
+    user: deployer
+    key: "{{ item }}"
+  with_items: "{{ deployer_authorized_keys }}"
+  become: yes

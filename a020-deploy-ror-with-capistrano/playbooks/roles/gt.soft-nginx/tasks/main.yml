@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+---
+
+- name: Install nginx
+  apt:
+    name: nginx
+    update_cache: true
+    cache_valid_time: 3600
+  become: yes
+
+- name: Remove links from sites-enabled
+  file:
+    path: /etc/nginx/sites-enabled/{{ item }}
+    state: absent
+  notify: Reload nginx
+  with_items: "{{ nginx_sites_removed + nginx_sites_disabled }}"
+  become: yes
+
+- name: Remove sites from sites-available
+  file:
+    path: /etc/nginx/sites-available/{{ item }}
+    state: absent
+  notify: Reload nginx
+  with_items: "{{ nginx_sites_removed }}"
+  become: yes
+
+- name: Add sites
+  template:
+    src: "{{ item.template_path }}"
+    dest: "/etc/nginx/sites-available/{{ item.name }}"
+  notify: Reload nginx
+  with_items: "{{ nginx_site_templates }}"
+  become: yes
+
+- name: Enable sites
+  file:
+    src: "/etc/nginx/sites-available/{{ item.name }}"
+    dest: "/etc/nginx/sites-enabled/{{ item.name }}"
+    state: link
+  notify: Reload nginx
+  with_items: "{{ nginx_site_templates }}"
+  when: item.enabled|default(true)
+  become: yes
+
+- name: Disable sites
+  file:
+    path: "/etc/nginx/sites-enabled/{{ item.name }}"
+    state: absent
+  notify: Reload nginx
+  with_items: "{{ nginx_site_templates }}"
+  when: not item.enabled|default(true)
+  become: yes

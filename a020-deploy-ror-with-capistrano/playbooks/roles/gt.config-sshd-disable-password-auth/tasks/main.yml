@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+---
+
+- name: Disable password authentication
+  lineinfile:
+    line: "PasswordAuthentication no"
+    path: /etc/ssh/sshd_config
+    regexp: "^[#]?\\s*PasswordAuthentication\\s+(yes|no)\\s*"
+  notify: Restart sshd
+  become: yes

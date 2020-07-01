@@ -1,0 +1,133 @@
+---
+- hosts:
+    - app01
+
+  roles:
+
+    # security settings
+    - gt.config-sshd-disable-password-auth
+
+    # deployment dependencies
+    - role: gt.config-user-deployer
+      deployer_authorized_keys: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+    # application dependencies
+    - gt.soft-nodejs-12x
+    - gt.soft-yarn-stable
+    - role: gt.soft-rvm-for-user
+      username: deployer
+      ruby_versions:
+        - ruby-2.6.6
+
+    # ansible mysql dependencies
+    - gt.soft-python3-pip
+    - gt.soft-pip-module-mysql
+
+  vars:
+    app_name: "ror-tracks"
+
+    app_db_name: ror-tracks
+    app_db_user: ror-tracks
+
+    # This is only for demonstration.
+    # Don't commit secrets in plan text to the repository.
+    app_secret_token: "96d38b71a61c277c983e31b5ef99dafe04338d2dea0f30002c82df8002137b8f6ecddf4b49632c8bd647651dc141b84490b9c8badcf315c313a27b5337a43177"
+    app_db_password: not-so-secret123
+
+  tasks:
+
+    # Install DB and dependencies
+    - block:
+        - name: Install MariaDB
+          apt:
+            name:
+              - libmariadb-dev
+              - mariadb-server
+
+        - name: Create DB
+          mysql_db:
+            name: "{{ app_db_name }}"
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+        - name: Create application DB user
+          mysql_user:
+            name: "{{ app_db_user }}"
+            password: "{{ app_db_password }}"
+            priv: "{{ app_db_name }}.*:ALL"
+            login_unix_socket: /var/run/mysqld/mysqld.sock
+
+      become: yes
+      tags:
+        - mysql
+
+#  bundle install --without development test --with mysql
+#  bundle exec rake db:migrate RAILS_ENV=production
+#  bundle exec rake assets:precompile RAILS_ENV=production
+#  touch .skip-docker
+#  RAILS_SERVE_STATIC_FILES=1 bundle exec rails server -e production
+#  http://192.168.102.11:3000
+
+    # Deploying secrets for the application
+    - block:
+
+      - name: Create folders for secrets
+        file:
+          path: "{{ item }}"
+          group: deployer
+          owner: deployer
+          state: directory
+        with_items:
+          - "/home/deployer/{{ app_name }}"
+          - "/home/deployer/{{ app_name }}/shared"
+          - "/home/deployer/{{ app_name }}/shared/config"
+
+      - name: Copy secrets
+        template:
+          src: "app/{{ item }}"
+          dest: "/home/deployer/{{ app_name }}/shared/config/{{ item }}"
+          mode: 0400
+          group: deployer
+          owner: deployer
+        with_items:
+          - site.yml
+          - database.yml
+        diff: no
+
+      become: yes
+
+# Setting up nginx and puma service
+- hosts:
+    - app01
+  vars:
+    app_name: "ror-tracks"
+  roles:
+    - gt.handlers-systemd
+    - name: gt.soft-nginx
+      nginx_sites_disabled:
+        - default
+      nginx_site_templates:
+        - name: "{{ app_name }}"
+          template_path: "nginx/{{ app_name }}"
+      tags: nginx
+
+  tasks:
+    - block:
+
+      - name: Create puma systemd service
+        template:
+          src: systemd/puma.service
+          dest: /etc/systemd/system/{{ app_name }}-puma.service
+        notify: Reload systemd unit configuration
+        become: yes
+
+      # reload systemd config before enabling the service
+      - meta: flush_handlers
+
+      - name: Enabled puma service
+        service:
+          name: "{{ app_name }}-puma"
+          enabled: yes
+        become: yes
+
+      tags:
+        - systemd

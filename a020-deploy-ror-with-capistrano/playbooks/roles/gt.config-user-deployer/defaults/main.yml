@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+---
+
+# User id.  Using a higher value, so it doesn't class with other
+# users.
+deployer_uid: 2099
+
+# List of authorized ssh keys to add to the user.
+deployer_authorized_keys: []
+
+# Shell to use
+deployer_shell: /bin/bash

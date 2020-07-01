@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+---
+
+# Install a single ruby version.
+# Required parameters:
+#   - ruby_version
+#   - username
+
+- name: Check if {{ ruby_version }} is installed
+  shell:
+    cmd: ~{{ username }}/.rvm/bin/rvm list | grep " {{ ruby_version }} " || echo "not installed"
+  become: yes
+  become_user: "{{ username }}"
+  register: version_check
+  ignore_errors: true
+  changed_when: false
+
+- name: Install {{ ruby_version }}
+  shell:
+    cmd: ~{{ username }}/.rvm/bin/rvm install {{ ruby_version }}
+  when: version_check.stdout == "not installed"
+  become: yes
+  become_user: "{{ username }}"

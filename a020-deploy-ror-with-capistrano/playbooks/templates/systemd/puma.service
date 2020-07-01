@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+
+[Unit]
+Description={{ app_name }} puma http server
+After=network.target
+
+[Service]
+Type=simple
+User=deployer
+
+WorkingDirectory=/home/deployer/{{ app_name }}/current
+
+ExecStart=bash -c "source /home/deployer/.rvm/scripts/rvm && bundle exec puma -C /home/deployer/{{ app_name }}/shared/puma.rb"
+ExecStop=bash -c "source /home/deployer/.rvm/scripts/rvm && bundle exec pumactl -S /home/deployer/{{ app_name }}/shared/tmp/pids/puma.state -F /home/deployer/{{ app_name }}/shared/puma.rb stop"
+PIDFile=/home/deployer/{{ app_name }}/shared/tmp/pids/puma.pid
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+---
+
+# List of sites to be removed (to be removed from sites-enabled,
+# sites-available)
+nginx_sites_removed: []
+
+# List of sites to be removed from sites-enabled
+nginx_sites_disabled: []
+
+# List of templates to add as sites
+# Every list item has format:
+#   - name: name
+#     template_path: path_to_the_template
+#     enabled: true|false (default is true)
+nginx_site_templates: []

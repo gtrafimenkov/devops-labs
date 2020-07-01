@@ -1,0 +1,19 @@
+# {{ ansible_managed }}
+#
+# This is application confiration file.
+# See site.yml.templ in the application repository.
+
+authentication_schemes:
+  - "database"
+
+time_zone: "UTC"
+
+secure_cookies: false
+
+secret_token: "{{ app_secret_token }}"
+
+force_ssl: false
+
+open_signups: false
+
+admin_email: my.email@domain.com

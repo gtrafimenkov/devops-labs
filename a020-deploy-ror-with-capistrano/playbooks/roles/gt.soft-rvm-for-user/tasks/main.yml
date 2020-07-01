@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 Gennady Trafimenkov
+
+---
+
+- name: Install dependencies
+  apt:
+    name: "{{ dependency_packages[ansible_distribution|lower]|default([]) }}"
+    update_cache: true
+    cache_valid_time: 3600
+  become: yes
+
+- name: Check if rvm already installed
+  stat:
+    path: "~{{ username }}/.rvm/bin/rvm"
+  register: check_rvm_results
+  check_mode: yes
+  become: yes
+  become_user: "{{ username }}"
+
+- block:
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - gnupg2
+        update_cache: true
+        cache_valid_time: 3600
+      become: yes
+
+    - name: Add gpg keys
+      apt_key:
+        id: "{{ item }}"
+        keyserver: keys.gnupg.net
+      with_items:
+        - 409B6B1796C275462A1703113804BB82D39DC0E3
+        - 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+      become: yes
+
+    - name: Download installer
+      get_url:
+        url: https://get.rvm.io
+        dest: "~{{ username }}/tmp-install-rvm.sh"
+      become: yes
+      become_user: "{{ username }}"
+
+    - name: Run installer
+      command: "bash ~{{ username }}/tmp-install-rvm.sh"
+      become: yes
+      become_user: "{{ username }}"
+
+    - name: Remove installer
+      file:
+        path: "~{{ username }}/tmp-install-rvm.sh"
+        state: absent
+      become: yes
+      become_user: "{{ username }}"
+
+  when: not check_rvm_results.stat.exists
+
+- name: Insall ruby versions
+  include_tasks:
+    file: install-ruby.yml
+  vars:
+    ruby_version: "{{ item }}"
+  with_items: "{{ ruby_versions }}"
