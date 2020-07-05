@@ -60,13 +60,6 @@
       tags:
         - mysql
 
-#  bundle install --without development test --with mysql
-#  bundle exec rake db:migrate RAILS_ENV=production
-#  bundle exec rake assets:precompile RAILS_ENV=production
-#  touch .skip-docker
-#  RAILS_SERVE_STATIC_FILES=1 bundle exec rails server -e production
-#  http://192.168.102.11:3000
-
     # Deploying secrets for the application
     - block:
 
